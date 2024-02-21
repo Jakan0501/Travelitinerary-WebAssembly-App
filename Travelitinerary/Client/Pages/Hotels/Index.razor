@@ -1,0 +1,70 @@
+﻿@page "/hotels/"
+@inject HttpClient _client
+@inject IJSRuntime js
+@attribute [Authorize]
+
+
+<h3 class="card-title text-white">Itinerary Hotels</h3>
+<br />
+
+<a href="/hotels/create" class="btn btn-secondary">
+    <span class="oi oi-plus"></span>
+    Create New Hotel
+</a>
+<br />
+<br />
+
+<div class="card-deck">
+    @if (Hotels == null)
+    {
+        <div class="alert alert-info">Loading Hotels...</div>
+    }
+    else
+    {
+        @foreach (var hotel in Hotels)
+        {
+            <div class="card" style="min-width:250px;">
+                <div class="card-body">
+                    <h5 class="card-title">@hotel.Name</h5>
+                    <p class="card-text">
+                        <strong>Address:</strong> @hotel.Address <br />
+                        <strong>Details:</strong> @hotel.Details <br />
+                        <strong>Check-In:</strong> @hotel.CheckIn.ToString("yyyy-MM-dd") <br />
+                        <strong>Check-Out:</strong> @hotel.CheckOut.ToString("yyyy-MM-dd") <br />
+                        <strong>Room Type:</strong> @hotel.RoomType <br />
+                        <strong>Price:</strong> @hotel.Price
+                    </p>
+                    <div class="btn-group" role="group" aria-label="Hotel Actions">
+                        <a href="/hotels/view/@hotel.Id" class="btn btn-primary">
+                            <span class="oi oi-eye"></span> View
+                        </a>
+                        <a href="/hotels/edit/@hotel.Id" class="btn btn-warning">
+                            <span class="oi oi-pencil"></span> Edit
+                        </a>
+                        <button class="btn btn-danger" @onclick="@(()=> DeleteHotel(hotel.Id))">
+                            <span class="oi oi-delete"></span> Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private List<Hotel>? Hotels;
+
+    protected async override Task OnInitializedAsync()
+    {
+        Hotels = await _client.GetFromJsonAsync<List<Hotel>>($"{Endpoints.HotelEndpoint}");
+    }
+
+    async Task DeleteHotel(int hotelId)
+    {
+        if (Hotels != null)
+        {
+            await _client.DeleteAsync($"{Endpoints.HotelEndpoint}/{hotelId}");
+            await OnInitializedAsync();
+        }
+    }
+}

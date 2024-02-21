@@ -1,0 +1,69 @@
+﻿@page "/itineraries"
+@inject HttpClient _client
+@inject IJSRuntime js
+@attribute [Authorize]
+
+<h3 class="card-title text-white">Itineraries</h3>
+<br />
+<a href="itineraries/create" class="btn btn-secondary">
+    <span class="oi oi-plus"></span>
+    Create New Itinerary
+</a>
+<br />
+<br />
+
+@if (Itineraries == null)
+{
+    <div class="alert alert-info">Loading Itineraries...</div>
+}
+else
+{
+    <div class="row">
+        @foreach (var itinerary in Itineraries)
+        {
+            <div class="col-md-4 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">@itinerary.PackaageDetails</h5>
+                        <div class="card-text">
+                            <p><strong>Date Created:</strong> @(itinerary.DateCreated.HasValue ? itinerary.DateCreated.Value.ToString("dd MMM, yyyy") : "-")</p>
+                            <p><strong>Date Updated:</strong> @(itinerary.DateUpdated.HasValue ? itinerary.DateUpdated.Value.ToString("dd MMM, yyyy") : "-")</p>
+                            <p><strong>Number of Days:</strong> @itinerary.no_of_days</p>
+                        </div>
+                        <div class="btn-group" role="group" aria-label="Actions">
+                            <a href="/itineraries/view/@itinerary.Id" class="btn btn-primary">
+                                <span class="oi oi-book"></span>
+                            </a>
+                            <a href="/itineraries/edit/@itinerary.Id" class="btn btn-warning">
+                                <span class="oi oi-pencil"></span>
+                            </a>
+                            <button class="btn btn-danger" @onclick="@(()=>Delete(itinerary.Id))">
+                                <span class="oi oi-delete"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<Itinerary>? Itineraries;
+
+    protected async override Task OnInitializedAsync()
+    {
+        Itineraries = await _client.GetFromJsonAsync<List<Itinerary>>($"{Endpoints.ItineraryEndpoint}");
+    }
+
+    async Task Delete(int itineraryId)
+    {
+        var itinerary = Itineraries.First(q => q.Id == itineraryId);
+        var confirm = await js.InvokeAsync<bool>("confirm", $"Do you want to delete {itinerary.PackaageDetails}?");
+        if (confirm)
+        {
+            await _client.DeleteAsync($"{Endpoints.ItineraryEndpoint}/{itineraryId}");
+            await OnInitializedAsync();
+        }
+    }
+}

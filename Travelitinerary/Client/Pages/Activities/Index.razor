@@ -1,0 +1,81 @@
+﻿@page "/activities/"
+@inject HttpClient _client
+@inject IJSRuntime js
+@attribute [Authorize]
+
+<h3 class="card-title text-white">Activities</h3>
+<br />
+<a href="/activities/create" class="btn btn-secondary">
+    <span class="oi oi-plus"></span>
+    Create New Activity
+</a>
+<br />
+<br />
+
+@if (Activities == null)
+{
+    <div class="alert alert-info">Loading Activities...</div>
+}
+else
+{
+    <div class="row">
+        @foreach (var activity in Activities)
+        {
+            <div class="col-md-2 mb-1" style="min-width:316px">
+                <div class="card">
+                    <div class="card-body d-flex flex-column align-items-center">
+                        <h5 class="card-title">@activity.Name</h5>
+                        <p class="card-text"><strong>Activity Type:</strong> @(activity.Type ?? "")</p>
+                        <p class="card-text"><strong>Duration:</strong> @activity.Duration</p>
+                        <p class="card-text"><strong>Description:</strong> @(activity.Description ?? "")</p>
+                        <p class="card-text"><strong>Starts At:</strong> @(activity.TimeStart.HasValue ? activity.TimeStart.Value.ToString("hh : mm : tt") : "")</p>
+                        <p class="card-text"><strong>Ends At:</strong> @(activity.TimeEnd.HasValue ? activity.TimeEnd.Value.ToString("hh : mm : tt") : "")</p>
+                        <p class="card-text"><strong>Price:</strong> @activity.Price.ToString()$</p>
+                        @if (activity.ActivityImage is not null)
+                        {
+                            <!-- Adjust the width and height values as needed -->
+                            <img class="card-img-top" style="object-fit: contain;" src="@ConvertByteArrayToBase64(@activity.ActivityImage)" alt="Activity Image" />
+                        }
+                        <div class="btn-group" role="group" aria-label="Actions">
+                            <a href="/activities/view/@activity.Id" class="btn btn-primary">
+                                <span class="oi oi-book"></span>
+                            </a>
+                            <a href="/activities/edit/@activity.Id" class="btn btn-warning">
+                                <span class="oi oi-pencil"></span>
+                            </a>
+                            <button class="btn btn-danger" @onclick="@(()=>Delete(activity.Id))">
+                                <span class="oi oi-delete"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<Activity>? Activities;
+
+    protected async override Task OnInitializedAsync()
+    {
+        Activities = await _client.GetFromJsonAsync<List<Activity>>($"{Endpoints.ActivityEndpoint}");
+    }
+
+    private string ConvertByteArrayToBase64(byte[] image)
+    {
+        var base64 = Convert.ToBase64String(image);
+        return $"data:image/gif;base64,{base64}";
+    }
+
+    async Task Delete(int activityId)
+    {
+        var activity = Activities.First(q => q.Id == activityId);
+        var confirm = await js.InvokeAsync<bool>("confirm", $"Do you want to delete {activity.Name}?");
+        if (confirm)
+        {
+            await _client.DeleteAsync($"{Endpoints.ActivityEndpoint}/{activityId}");
+            await OnInitializedAsync();
+        }
+    }
+}

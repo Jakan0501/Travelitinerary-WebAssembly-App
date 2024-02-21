@@ -1,0 +1,72 @@
+﻿@page "/flights/"
+@inject HttpClient _client
+@inject IJSRuntime js
+@attribute [Authorize]
+
+<h3 class="card-title text-white">Itinerary Flights</h3>
+<br />
+
+<div class="d-flex justify-content-between">
+    <a href="/flights/create" class="btn btn-secondary">
+        <span class="oi oi-plus"></span>
+        Create New Flight
+    </a>
+</div>
+<br />
+
+@if (Flights == null)
+{
+    <div class="alert alert-info">Loading Flights...</div>
+}
+else
+{
+    <div class="row">
+        @foreach (var flight in Flights)
+        {
+            <div class="col-md-4 mb-4" style="min-width: 300px;">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">@flight.AirlineName</h5>
+                        <p class="card-text"><strong>Departure:</strong> @flight.Departure</p>
+                        <p class="card-text"><strong>Arrival:</strong> @flight.Arrival</p>
+                        <p class="card-text"><strong>Details:</strong> @flight.Details</p>
+                        <p class="card-text"><strong>Week Day:</strong> @flight.WeekDay</p>
+                        <p class="card-text"><strong>Check-In:</strong> @(flight.CheckIn.HasValue ? flight.CheckIn.Value.ToString("yyyy-MM-dd HH:mm:ss") : "Not specified")</p>
+                        <p class="card-text"><strong>Seat Class:</strong> @flight.SeatClass</p>
+                        <p class="card-text"><strong>Available Seats:</strong> @flight.Availableseats</p>
+                        <p class="card-text"><strong>Price:</strong> @flight.Price</p>
+                    </div>
+                    <div class="card-footer">
+                        <a href="/flights/view/@flight.Id" class="btn btn-primary">
+                            <span class="oi oi-eye"></span> View
+                        </a>
+                        <a href="/flights/edit/@flight.Id" class="btn btn-warning">
+                            <span class="oi oi-pencil"></span> Edit
+                        </a>
+                        <button class="btn btn-danger" @onclick="@(()=> DeleteFlight(flight.Id))">
+                            <span class="oi oi-delete"></span> Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<Flight>? Flights;
+
+    protected async override Task OnInitializedAsync()
+    {
+        Flights = await _client.GetFromJsonAsync<List<Flight>>($"{Endpoints.FlightEndpoint}");
+    }
+
+    async Task DeleteFlight(int flightId)
+    {
+        if (Flights != null)
+        {
+            await _client.DeleteAsync($"{Endpoints.FlightEndpoint}/{flightId}");
+            await OnInitializedAsync();
+        }
+    }
+}
